@@ -4,9 +4,13 @@
 #include <io.h>
 #include <drivers/keyboard.h>
 #include <kernel/pic.h>
+#include <kernel/gdt.h>
+#include <kernel/idt.h>
 
 void kernel_main(void) {
   PIC_remap(0x20, 0x28);
+  gdt_init();
+  idt_init();
   terminal_initialize();
 
   printf("Hello, kernel World!\n");
