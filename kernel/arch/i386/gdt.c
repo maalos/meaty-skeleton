@@ -1,4 +1,6 @@
 #include <kernel/gdt.h>
+#include <logging.h>
+#include <stdio.h>
 
 // The GDT table
 struct gdt_entry gdt[3];
@@ -39,19 +41,22 @@ struct gdt_entry gdt_data = {
 // Initialize the GDT
 void gdt_init(void)
 {
+  log(0, "Initializing GDT");
   // Set the GDT pointer
   gp.limit = (sizeof(struct gdt_entry) * 3) - 1;
   gp.base = (uint32_t)&gdt;
 
   // Set the null GDT entry
+  log(0, "Setting the null GDT entry");
   gdt_set_entry(0, 0, 0, 0, 0);
 
   // Set the code segment GDT entry
+  log(0, "Setting the code segment GDT entry");
   gdt_set_entry(1, 0, 0xFFFFFFFF, 0x9A, 0xCF);
 
   // Set the data segment GDT entry
+  log(0, "Setting the data segment GDT entry");
   gdt_set_entry(2, 0, 0xFFFFFFFF, 0x92, 0xCF);
-
 }
 
 // Set a GDT entry
@@ -69,4 +74,5 @@ void gdt_set_entry(int32_t num, uint32_t base, uint32_t limit, uint8_t access, u
   // Set the access flags of the GDT entry
   gdt[num].access = access;
 
+  printf("Set a GDT entry no. %d, base %u, limit %u, access %u, gran %u\n", num, base, limit, access, gran);
 }

@@ -2,6 +2,7 @@
 
 this is a fork of osdev's meaty-skeleton, in process of being transformed into a real, capable operating system  
   
+
 ## roadmap
 - [x] boot kernel from grub
 - [x] kernel
@@ -11,8 +12,9 @@ this is a fork of osdev's meaty-skeleton, in process of being transformed into a
 - [x] basic keyboard handling
 - [x] libc
 - [x] math library
-- [ ] idt
-- [ ] gdt
+- [x] gdt
+- [x] idt
+- [x] isr
 - [ ] pit
 - [ ] irq
 - [ ] multithreading

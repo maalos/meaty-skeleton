@@ -8,12 +8,16 @@
 #include <kernel/idt.h>
 
 void kernel_main(void) {
-  PIC_remap(0x20, 0x28);
+  terminal_initialize();
   gdt_init();
   idt_init();
-  terminal_initialize();
+  PIC_remap(0x20, 0x28);
 
   printf("Hello, kernel World!\n");
+
+  printf("Attempting division by zero, 2/0=?");
+
+  printf("2/0=%f", (2/0));
 
   //char c = getchar();
   //printf("%c", c);
