@@ -15,12 +15,11 @@ void kernel_main(void) {
 
   printf("Hello, kernel World!\n");
 
-  printf("Attempting division by zero, 2/0=?");
+  printf("Press any key to try dividing by zero");
 
-  printf("2/0=%f", (2/0));
+  getchar();
 
-  //char c = getchar();
-  //printf("%c", c);
+  printf("1/0=%f", (1/0));
 
   //printf("%s", getline());
 

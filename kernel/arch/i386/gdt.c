@@ -57,6 +57,11 @@ void gdt_init(void)
   // Set the data segment GDT entry
   log(0, "Setting the data segment GDT entry");
   gdt_set_entry(2, 0, 0xFFFFFFFF, 0x92, 0xCF);
+
+  // Load the GDT into the register
+  log(0, "Loading the GDT into the register");
+  asm volatile("lgdt %0" : : "m" (gp));
+  log(0, "The GDT should now be in the register");
 }
 
 // Set a GDT entry
