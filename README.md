@@ -3,6 +3,10 @@
 this is a fork of osdev's meaty-skeleton, in process of being transformed into a real, capable operating system  
   
 
+## screenshots or something  
+![1](readme/1.png)
+![2](readme/2.jpg)  
+
 ## roadmap
 - [x] boot kernel from grub
 - [x] kernel
@@ -10,7 +14,7 @@ this is a fork of osdev's meaty-skeleton, in process of being transformed into a
 - [x] printing functions
 - [x] remapping the pic
 - [x] basic keyboard handling
-- [x] libc
+- [x] libc (not full obviously)
 - [x] math library
 - [x] gdt
 - [x] idt
@@ -18,6 +22,7 @@ this is a fork of osdev's meaty-skeleton, in process of being transformed into a
 - [ ] pit
 - [ ] irq
 - [x] framebuffer
+- [x] basic graphics functions
 - [ ] multithreading
 - [ ] higher half kernel
 - [ ] rings

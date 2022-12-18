@@ -4,6 +4,8 @@
 #include <kernel/tty.h>
 #endif
 
+// TODO merge those functions
+
 int putchar(int ic) {
 #if defined(__is_libk)
 	char c = (char) ic;

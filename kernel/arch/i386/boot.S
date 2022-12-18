@@ -35,7 +35,7 @@
 # define AOUT_KLUDGE MULTIBOOT_AOUT_KLUDGE
 #endif
 #define MULTIBOOT_HEADER_FLAGS                  MULTIBOOT_PAGE_ALIGN | MULTIBOOT_MEMORY_INFO | MULTIBOOT_VIDEO_MODE | AOUT_KLUDGE
-        
+
         .text
 
         .globl  start, _start
@@ -45,7 +45,7 @@ _start:
 
         /* Align 32 bits boundary. */
         .align  4
-        
+
         /* Multiboot header. */
 multiboot_header:
         /* magic */
@@ -73,8 +73,8 @@ multiboot_header:
         .long   0
 #endif /* __ELF__ */
         .long 0
-        .long 1024
-        .long 768
+        .long 1920
+        .long 1080
         .long 32
 
 multiboot_entry:

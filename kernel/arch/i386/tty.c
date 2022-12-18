@@ -7,9 +7,11 @@
 
 #include "vga.h"
 
-static const size_t VGA_WIDTH = 80;
-static const size_t VGA_HEIGHT = 25;
+static const size_t VGA_WIDTH = 240;  // likely 240 for 1920
+static const size_t VGA_HEIGHT = 135; // likely 135 for 1080
 static uint16_t* const VGA_MEMORY = (uint16_t*) 0xB8000;
+
+// TODO: CLEAN UP THIS FUCKING MESS
 
 static size_t terminal_row;
 static size_t terminal_column;
@@ -44,14 +46,16 @@ void terminal_putchar(char c) {
 	  ++terminal_row;
     terminal_column = -1;
   } else
-    terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
+    //terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
+    fb_putchar((int)uc, terminal_column, terminal_row, 0xFFFFFF, 0x000000);
 
   if (++terminal_column == VGA_WIDTH) {
 		terminal_column = 0;
   }
 	if (terminal_row == VGA_HEIGHT) {
 		terminal_row = VGA_HEIGHT - 1;
-    terminal_scroll();
+    //terminal_scroll();
+    fb_scroll();
   }
 }
 
@@ -63,6 +67,8 @@ void terminal_write(const char* data, size_t size) {
 void terminal_writestring(const char* data) {
 	terminal_write(data, strlen(data));
 }
+
+// TODO: make the below function work ong
 
 void terminal_scroll(void) {
   memmove(terminal_buffer, terminal_buffer + VGA_WIDTH, VGA_WIDTH * (VGA_HEIGHT - 1) * sizeof(uint16_t));  
