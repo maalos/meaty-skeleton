@@ -17,6 +17,7 @@ this is a fork of osdev's meaty-skeleton, in process of being transformed into a
 - [x] isr
 - [ ] pit
 - [ ] irq
+- [x] framebuffer
 - [ ] multithreading
 - [ ] higher half kernel
 - [ ] rings
