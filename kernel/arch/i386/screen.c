@@ -1,9 +1,9 @@
 //unsigned char *pixel = vram + y*pitch + x*pixelwidth;
 #include <multiboot.h>
-//#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
 
@@ -12,28 +12,34 @@ static int ypos;
 static int pixelwidth;
 static int pitch;
 
+uint16_t bpl = 0;
+
+//unsigned char *framebuffer;
 unsigned char *video;
 
 multiboot_info_t *mbi;
 
+void fb_swap() {
+  //memcpy(framebuffer, video, mbi->framebuffer_height * mbi->framebuffer_pitch);
+}
+
 void fb_setaddr(unsigned long magic, unsigned long addr) {
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
-    //printf("Invalid magic number: 0x%x\n", (unsigned) magic);
-    return;
+    return; // wasn't loaded by a multiboot compliant bootloader
   }
 
 	mbi = (multiboot_info_t *) addr;
 
-  video = mbi->framebuffer_addr;
+  //framebuffer = mbi->framebuffer_addr;
+  //video = malloc(mbi->framebuffer_height * mbi->framebuffer_pitch);
+  video = mbi-> framebuffer_addr;
   pixelwidth = mbi->framebuffer_bpp / 8;
   pitch = mbi->framebuffer_pitch;
 }
 
-void fb_clear(void) {
-  int i;
-
-  for (i = 0; i < 1920 * 1080 * 4; i++)
-    *(video + i) = 0;
+void fb_clear() {
+  for (int i = 0; i < mbi->framebuffer_height * mbi->framebuffer_pitch; i++)
+    *(video + i) = 0x222222;
 
   xpos = 0;
   ypos = 0;
@@ -46,11 +52,11 @@ void fb_putpixel(int x, int y, int color) {
 	video[where + 2] = (color >> 16) & 255;
 }
 
-void fb_rect(unsigned char r, unsigned char g, unsigned char b, unsigned char w, unsigned char h) {
+void fb_rect(unsigned char r, unsigned char g, unsigned char b, unsigned char sw, unsigned char sh, unsigned char w, unsigned char h) {
   int i, j;
 
-  for (i = 0; i < w; i++) {
-    for (j = 0; j < h; j++) {
+  for (i = sw; i < w; i++) {
+    for (j = sh; j < h; j++) {
       //putpixel(vram, 64 + j, 64 + i, (r << 16) + (g << 8) + b);
       video[j*pixelwidth] = b;
       video[j*pixelwidth + 1] = g;
@@ -79,8 +85,8 @@ typedef struct {
 // extracted from font:
 // _binary_kernel_arch_i386_font_psf_start _binary_kernel_arch_i386_font_psf_end _binary_kernel_arch_i386_font_psf_size
 
-extern char _binary_kernel_arch_i386_font_psf_start;
-extern char _binary_kernel_arch_i386_font_psf_end;
+extern char _binary_font_psf_start;
+extern char _binary_font_psf_end;
 
 uint16_t *unicode;
 
@@ -88,7 +94,7 @@ void psf_init() {
   uint16_t glyph = 0;
   /* cast the address to PSF header struct */
 
-  PSF_font *font = (PSF_font*)&_binary_kernel_arch_i386_font_psf_start;
+  PSF_font *font = (PSF_font*)&_binary_font_psf_start;
 
   /* is there a unicode table? */
   if (font->flags) {
@@ -97,11 +103,11 @@ void psf_init() {
   }
 
   /* get the offset of the table */
-  char *s = (char *)((unsigned char*)&_binary_kernel_arch_i386_font_psf_start + font->headersize + font->numglyph * font->bytesperglyph);
+  char *s = (char *)((unsigned char*)&_binary_font_psf_start + font->headersize + font->numglyph * font->bytesperglyph);
 
   /* allocate memory for translation table */
   unicode = calloc(USHRT_MAX, 2);
-  while(s > _binary_kernel_arch_i386_font_psf_end) {
+  while(s > _binary_font_psf_end) {
     uint16_t uc = (uint16_t)((unsigned char *)s[0]);
     if(uc == 0xFF) {
       glyph++;
@@ -136,10 +142,11 @@ void fb_setxy(unsigned short int x, unsigned short int y) {
 
 void fb_putchar(unsigned short int c, int cx, int cy, uint32_t fg, uint32_t bg) {
   // cast the address to PSF header struct
-  PSF_font *font = (PSF_font*)&_binary_kernel_arch_i386_font_psf_start;
+  PSF_font *font = (PSF_font*)&_binary_font_psf_start;
 
   // we need to know how many bytes encode one row
   int bytesperline=(font->width+7)/8;
+  bpl = bytesperline;
 
   // unicode translation
   if(unicode != NULL) {
@@ -147,7 +154,7 @@ void fb_putchar(unsigned short int c, int cx, int cy, uint32_t fg, uint32_t bg) 
   }
 
   // get the glyph for the character. If there's no glyph for a given character, we'll display the first glyph.
-  unsigned char *glyph = (unsigned char*)&_binary_kernel_arch_i386_font_psf_start + font->headersize + (c > 0 && c < font->numglyph ? c : 0) *font->bytesperglyph;
+  unsigned char *glyph = (unsigned char*)&_binary_font_psf_start + font->headersize + (c > 0 && c < font->numglyph ? c : 0) *font->bytesperglyph;
 
   // calculate the upper left corner on screen where we want to display. we only do this once, and adjust the offset later. This is faster.
   int offs = (cy * font->height * scanline) + (cx * (font->width + 1) * sizeof(PIXEL));
@@ -175,21 +182,14 @@ void fb_putchar(unsigned short int c, int cx, int cy, uint32_t fg, uint32_t bg) 
 }
 
 void fb_scroll() {
-    // Scroll text
-    for (int y = 8; y != mbi->framebuffer_height; ++y)
-    {
-        void* dest = (void*)(((uintptr_t)mbi->framebuffer_bpp / 8 * mbi->framebuffer_width) + (y - 8) * mbi->framebuffer_pitch);
-        const void* src = (void*)(((uintptr_t)mbi->framebuffer_bpp / 8 * mbi->framebuffer_width) + y * mbi->framebuffer_pitch);
-        memcpy(dest, src, mbi->framebuffer_width * 4);
-    }
+  uint64_t pixels = mbi->framebuffer_height * mbi->framebuffer_pitch;
+  memmove(video, video + (16 * mbi->framebuffer_pitch), pixels); // POSSIBLE BUG WITH UNUSED VIDEO MEMORY GOING TOO FAR BEHIND THE VIDEO BUFFER ONG
+}
 
-    // Erase last line
-    for (int y = mbi->framebuffer_height - 8; y != mbi->framebuffer_height; ++y)
-    {
-        uint32_t* dest = (uint32_t*)(((uintptr_t)mbi->framebuffer_bpp / 8 * mbi->framebuffer_width) + y * mbi->framebuffer_pitch);
-        for (int i = 0; i != mbi->framebuffer_width; ++i)
-        {
-            *dest++ = 0x000000;
-        }
-    }
+uint32_t *fb_get_size() {
+  static uint32_t data[3];
+  data[0] = mbi->framebuffer_width;
+  data[1] = mbi->framebuffer_height;
+  data[2] = mbi->framebuffer_bpp;
+  return data;
 }

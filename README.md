@@ -24,6 +24,7 @@ this OS is not supposed to show my skills of programming nor my knowledge of how
 - [ ] irq
 - [x] framebuffer
 - [x] basic graphics functions
+- [ ] double buffering
 - [ ] multithreading
 - [ ] higher half kernel
 - [ ] rings

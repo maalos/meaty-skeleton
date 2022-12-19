@@ -108,5 +108,5 @@ void idt_set_entry(int32_t num, uint32_t offset, uint16_t selector, uint8_t type
   // Set the zero field of the IDT entry to 0
   idt[num].zero = 0;
 
-  printf("Set an IDT entry no. %d, offset %u, selector %u, type_attr %u\n", num, offset, selector, type_attr);
+  printf("Set an IDT entry no. %02d, offset %u, selector %u, type_attr %u\n", num, offset, selector, type_attr);
 }
