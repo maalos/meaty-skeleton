@@ -11,15 +11,15 @@ this OS is not supposed to show my skills of programming nor my knowledge of how
 ## roadmap
 - [x] boot kernel from grub
 - [x] kernel
-- [x] io operations
+- [x] io operations [ai]
 - [x] printing functions
-- [x] remapping the pic
-- [x] basic keyboard handling
-- [x] libc (not full obviously)
-- [x] math library
-- [x] gdt
-- [x] idt
-- [x] isr
+- [x] remapping the pic [ai]
+- [x] basic keyboard handling [ai]
+- [x] libc (not full obviously) [½ ai]
+- [x] math library [ai]
+- [x] gdt [ai]
+- [x] idt [ai]
+- [x] isr [ai]
 - [ ] pit
 - [ ] irq
 - [x] framebuffer
