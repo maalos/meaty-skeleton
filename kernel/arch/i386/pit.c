@@ -1,5 +1,6 @@
 #include <io.h>
 #include <stdint.h>
+#include <stdio.h> //debugging purposes
 
 #define PIT_CMD_PORT 0x43  // command port for PIT
 #define PIT_CH0_PORT 0x40  // channel 0 data port for PIT
@@ -13,6 +14,7 @@ void pit_init() {
 // Set the frequency of the interval timer
 void set_pit_frequency(uint16_t frequency) {
   uint16_t divisor = 1193180 / frequency;  // calculate the divisor
+  printf("Set timer freq to %u, divisor %u", frequency, divisor);
 
   // send command byte to PIT
   outb(PIT_CMD_PORT, 0x36);
@@ -38,9 +40,11 @@ uint32_t get_current_time() {
 void delay(uint32_t milliseconds) {
   // Wait for the specified number of milliseconds
   // set the frequency of the interval timer to 1000 Hz
-  set_pit_frequency(1000);
+  set_pit_frequency(200);
+  printf("Starting timer");
   uint32_t start_time = get_current_time();
   while (get_current_time() - start_time < milliseconds)
     //putchar('d');
     ;
+  printf("timer done");
 }

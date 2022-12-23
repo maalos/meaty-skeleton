@@ -10,7 +10,7 @@ cp sysroot/boot/myos.kernel isodir/boot/myos.kernel
 cat > isodir/boot/grub/grub.cfg << EOF
 menuentry "myos" {
   insmod all_video
-	multiboot /boot/myos.kernel
+  multiboot /boot/myos.kernel
 }
 EOF
-grub-mkrescue -o myos.iso isodir
+grub2-mkrescue -o myos.iso isodir

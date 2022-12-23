@@ -1,9 +1,36 @@
 #include <stdio.h>
+#include <kernel/paging.h>
+#include <stdint.h>
+
+//struct interrupt_frame
+//{
+//    uword_t ip;
+//    uword_t cs;
+//    uword_t flags;
+//    uword_t sp;
+//    uword_t ss;
+//};
+ 
+//__attribute__ ((interrupt))
+//void panic_full(struct interrupt_frame *frame, const chat* text) { // TODO USE THIS ONE INSTEAD OF THE OTHER ONES
+//  asm("cli");
+//  printf("\nKernel panic\nCaught an exception: %s\n| IP: 0x%x | CS: 0x%x | FLAGS: 0x%x | SP: 0x%x | SS: 0x%x | Halting the system", text, frame->ip, frame->cs, frame->flags, frame->sp, frame->ss);
+//  while(1);
+//}
 
 void panic(const char* text) {
 	asm ("cli");
 	printf("\nKernel panic\nCaught an exception: %s\nHalting the system", text);
 	while(1);
+}
+
+void page_fault_handler(const char* text) {
+	uint32_t virt_pagefault_addr;
+	asm volatile("movl %%cr2, %0" : "=r"(virt_pagefault_addr));
+	printf("\nPage fault at virtual address 0x%x\n", &virt_pagefault_addr);
+	asm("cli");
+	while(1);
+	panic("Halting from Page fault handler");
 }
 
 void isr_00(void) {
@@ -63,7 +90,7 @@ void isr_13(void) {
 }
 
 void isr_14(void) {
-  panic("Page fault exception");
+  page_fault_handler("Page fault exception");
 }
 
 void isr_16(void) {

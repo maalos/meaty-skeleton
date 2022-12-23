@@ -4,8 +4,10 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
+#define offset 0xC0000000
 
 static int xpos;
 static int ypos;
@@ -24,22 +26,36 @@ void fb_swap() {
 }
 
 void fb_setaddr(unsigned long magic, unsigned long addr) {
+  printf("trying to get the address, got 0x%x so far\n", addr);
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
     return; // wasn't loaded by a multiboot compliant bootloader
   }
 
-	mbi = (multiboot_info_t *) addr;
+  mbi = (multiboot_info_t *) addr;
+}
+
+void fb_init() {
+  printf("framebuffer address is 0x%x\n", mbi->framebuffer_addr);
 
   //framebuffer = mbi->framebuffer_addr;
   //video = malloc(mbi->framebuffer_height * mbi->framebuffer_pitch);
-  video = mbi-> framebuffer_addr;
-  pixelwidth = mbi->framebuffer_bpp / 8;
-  pitch = mbi->framebuffer_pitch;
+
+  //video = mbi->framebuffer_addr;
+  //map_page(mbi->framebuffer_addr, mbi->framebuffer_addr, 0x00000111);
+  //pixelwidth = mbi->framebuffer_bpp / 8;
+  //pitch = mbi->framebuffer_pitch;
+  //for (int i = 0; i < mbi->framebuffer_height * mbi->framebuffer_pitch; i++)            *(video + i) = 0x111111;
+
+  //printf("\nFramebuffer address is 0x%x\n", mbi->framebuffer_addr);
+  // let's try mapping the framebuffer
+  //for(uint64_t i = mbi->framebuffer_addr; i < mbi->framebuffer_addr + (mbi->framebuffer_height * mbi->framebuffer_pitch); i += 4096) {
+    //map_page(i, mbi->framebuffer_addr, 0x00000111);
+  //}
 }
 
 void fb_clear() {
   for (int i = 0; i < mbi->framebuffer_height * mbi->framebuffer_pitch; i++)
-    *(video + i) = 0x222222;
+    *(video + i) = 0x111111;
 
   xpos = 0;
   ypos = 0;
@@ -52,15 +68,13 @@ void fb_putpixel(int x, int y, int color) {
 	video[where + 2] = (color >> 16) & 255;
 }
 
-void fb_rect(unsigned char r, unsigned char g, unsigned char b, unsigned char sw, unsigned char sh, unsigned char w, unsigned char h) {
-  int i, j;
-
-  for (i = sw; i < w; i++) {
-    for (j = sh; j < h; j++) {
+void fb_rect(int color, uint32_t pos_w, uint32_t pos_h, uint32_t w, uint32_t h) {
+  for (uint32_t i = pos_w; i < pos_w + w; i++) {
+    for (uint32_t j = pos_h; j < pos_h + h; j++) {
       //putpixel(vram, 64 + j, 64 + i, (r << 16) + (g << 8) + b);
-      video[j*pixelwidth] = b;
-      video[j*pixelwidth + 1] = g;
-      video[j*pixelwidth + 2] = r;
+      video[j*pixelwidth]     =  color        & 255;
+      video[j*pixelwidth + 1] = (color >>  8) & 255;
+      video[j*pixelwidth + 2] = (color >> 16) & 255;
     }
     video+=pitch;
   }

@@ -20,17 +20,35 @@ this OS is not supposed to show my skills of programming nor my knowledge of how
 - [x] gdt [ai]
 - [x] idt [ai]
 - [x] isr [ai]
+- [x] serial
 - [ ] pit
 - [ ] irq
 - [x] framebuffer
 - [x] basic graphics functions
 - [ ] double buffering
 - [ ] multithreading
-- [ ] higher half kernel
+- [x] higher half kernel
 - [ ] rings
 - [ ] permissions
-- [ ] paging
+- [x] paging
 - [ ] memory map
 - [ ] memory manager
-- [ ] memory allocator
-- [ ] heap allocator
+
+## build and run
+you need the i686-elf- toolchain, check osdev wiki for instructions on building it  
+you also need objcopy  
+
+### building
+
+```
+cd meaty-skeleton/kernel/arch/i386
+objcopy -O elf32-i386 -B i386 -I binary font.psf font.o
+cd ../../../
+chmod +x qemu.sh
+```
+
+### running
+
+```
+./qemu.sh
+```
