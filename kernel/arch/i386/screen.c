@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <kernel/paging.h>
 
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
 #define offset 0xC0000000
@@ -16,35 +17,59 @@ static int pitch;
 
 uint16_t bpl = 0;
 
-//unsigned char *framebuffer;
-unsigned char *video;
-
 multiboot_info_t *mbi;
 
+unsigned char *framebuffer;
+//unsigned char *backbuffer;
+
 void fb_swap() {
-  //memcpy(framebuffer, video, mbi->framebuffer_height * mbi->framebuffer_pitch);
+  //memcpy(backbuffer, framebuffer, mbi->framebuffer_height * mbi->framebuffer_pitch);
 }
 
-void fb_setaddr(unsigned long magic, unsigned long addr) {
+void fb_setaddr(unsigned long magic, unsigned long *addr) {
   printf("trying to get the address, got 0x%x so far\n", addr);
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
-    return; // wasn't loaded by a multiboot compliant bootloader
+    printf("The kernel was not loaded by a multiboot compliant bootloader");
+    asm("hlt");
   }
-
-  mbi = (multiboot_info_t *) addr;
 }
 
-void fb_init() {
-  printf("framebuffer address is 0x%x\n", mbi->framebuffer_addr);
+void fb_init(unsigned long magic, unsigned long *addr) {
+  map_page(addr, 0xC0000000, 0x07);
+
+  mbi = (multiboot_info_t *) 0xC0000000;
+
+  framebuffer = (void *) (uint32_t) mbi->framebuffer_addr;
 
   //framebuffer = mbi->framebuffer_addr;
-  //video = malloc(mbi->framebuffer_height * mbi->framebuffer_pitch);
+  //framebuffer = malloc(mbi->framebuffer_height * mbi->framebuffer_pitch);
 
-  //video = mbi->framebuffer_addr;
-  //map_page(mbi->framebuffer_addr, mbi->framebuffer_addr, 0x00000111);
-  //pixelwidth = mbi->framebuffer_bpp / 8;
-  //pitch = mbi->framebuffer_pitch;
-  //for (int i = 0; i < mbi->framebuffer_height * mbi->framebuffer_pitch; i++)            *(video + i) = 0x111111;
+  // Calculate the number of pages needed to hold the framebuffer
+  //unsigned int num_pages = (1920 * 1080 * 4) / 4096;
+
+  // Calculate the physical address of the first page of the framebuffer
+  //unsigned long phys_addr = 0xC0010058 & ~0xFFF;
+
+  // Calculate the virtual address where you want to map the framebuffer
+  //void *virt_addr = (void *)0xFFF00000;
+
+  // Set the flags for the page mapping (e.g. read/write, user/supervisor, etc.)
+  //unsigned int flags = 0x07;  // Read/Write, Supervisor
+
+  //for (unsigned int i = 0; i < num_pages; i++) {
+    // Map each page of the framebuffer
+    //map_page((void *)phys_addr, virt_addr, flags);
+
+    // Increment the physical and virtual addresses to the next page
+    //phys_addr += 4096;
+    //virt_addr += 4096;
+  //}
+
+  //map_page(mbi->framebuffer_addr, mbi->framebuffer_addr, 0x0111);
+  pixelwidth = mbi->framebuffer_bpp / 8;
+  pitch = mbi->framebuffer_pitch;
+  //for (int i = 0; i < mbi->framebuffer_height * mbi->framebuffer_pitch; i++)
+  //  *(framebuffer + i) = 0x111111;
 
   //printf("\nFramebuffer address is 0x%x\n", mbi->framebuffer_addr);
   // let's try mapping the framebuffer
@@ -55,7 +80,7 @@ void fb_init() {
 
 void fb_clear() {
   for (int i = 0; i < mbi->framebuffer_height * mbi->framebuffer_pitch; i++)
-    *(video + i) = 0x111111;
+    *(framebuffer + i) = 0x111111;
 
   xpos = 0;
   ypos = 0;
@@ -63,20 +88,20 @@ void fb_clear() {
 
 void fb_putpixel(int x, int y, int color) {
 	unsigned where = (x * pixelwidth) + (y * pitch);
-	video[where] = color & 255;
-	video[where + 1] = (color >> 8) & 255;
-	video[where + 2] = (color >> 16) & 255;
+	framebuffer[where] = color & 255;
+	framebuffer[where + 1] = (color >> 8) & 255;
+	framebuffer[where + 2] = (color >> 16) & 255;
 }
 
 void fb_rect(int color, uint32_t pos_w, uint32_t pos_h, uint32_t w, uint32_t h) {
   for (uint32_t i = pos_w; i < pos_w + w; i++) {
     for (uint32_t j = pos_h; j < pos_h + h; j++) {
       //putpixel(vram, 64 + j, 64 + i, (r << 16) + (g << 8) + b);
-      video[j*pixelwidth]     =  color        & 255;
-      video[j*pixelwidth + 1] = (color >>  8) & 255;
-      video[j*pixelwidth + 2] = (color >> 16) & 255;
+      framebuffer[j*pixelwidth]     =  color        & 255;
+      framebuffer[j*pixelwidth + 1] = (color >>  8) & 255;
+      framebuffer[j*pixelwidth + 2] = (color >> 16) & 255;
     }
-    video+=pitch;
+    framebuffer+=pitch;
   }
 }
 
@@ -182,7 +207,7 @@ void fb_putchar(unsigned short int c, int cx, int cy, uint32_t fg, uint32_t bg) 
 
     // display a row
     for(x = 0; x < font->width; x++) {
-      *((PIXEL*)(video + line)) = *((unsigned int*)glyph) & mask ? fg : bg;
+      *((PIXEL*)(framebuffer + line)) = *((unsigned int*)glyph) & mask ? fg : bg;
 
       // adjust to the next pixel
       mask >>= 1;
@@ -197,13 +222,14 @@ void fb_putchar(unsigned short int c, int cx, int cy, uint32_t fg, uint32_t bg) 
 
 void fb_scroll() {
   uint64_t pixels = mbi->framebuffer_height * mbi->framebuffer_pitch;
-  memmove(video, video + (16 * mbi->framebuffer_pitch), pixels); // POSSIBLE BUG WITH UNUSED VIDEO MEMORY GOING TOO FAR BEHIND THE VIDEO BUFFER ONG
+  memmove(framebuffer, framebuffer + (16 * mbi->framebuffer_pitch), pixels); // POSSIBLE BUG WITH UNUSED framebuffer MEMORY GOING TOO FAR BEHIND THE framebuffer BUFFER ONG
 }
 
 uint32_t *fb_get_size() {
-  static uint32_t data[3];
-  data[0] = mbi->framebuffer_width;
-  data[1] = mbi->framebuffer_height;
-  data[2] = mbi->framebuffer_bpp;
+  static uint32_t data[4];
+  data[0] = mbi->framebuffer_addr;
+  data[1] = mbi->framebuffer_width;
+  data[2] = mbi->framebuffer_height;
+  data[3] = mbi->framebuffer_bpp;
   return data;
 }

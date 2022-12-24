@@ -141,7 +141,7 @@ multiboot_entry:
 	orl $0x80010000, %ecx
 	movl %ecx, %cr0
 
-	# Jump to higher half with an absolute jump. 
+	# Jump to higher half with an absolute jump.
 	lea 4f, %ecx
 	jmp *%ecx
 
@@ -150,27 +150,20 @@ multiboot_entry:
 4:
 	# At this point, paging is fully set up and enabled.
 
-	# Unmap the identity mapping as it is now unnecessary. 
+	# Unmap the identity mapping as it is now unnecessary.
 	movl $0, boot_page_directory + 0
 
-	# Reload crc3 to force a TLB flush so the changes to take effect.
+	# Reload cr3 to force a TLB flush so the changes to take effect.
 	movl %cr3, %ecx
 	movl %ecx, %cr3
 
 	# Set up the stack.
 	mov $stack_top, %esp
 
-	# multiboot shit idk what the hell is going on in here but i think it's working
-	pushl $0
-	popf
-
-	add $0xC0000000, %ebx
 	pushl %ebx
 	pushl %eax
-	
-	# set the framebuffer address
-	call EXT_C(fb_setaddr)
-	# Enter the high-level kernel.
+
+	# Enter the high-level kernel and set the MBI structure address.
 	call kernel_main
 
 	# Infinite loop if the system has nothing more to do.

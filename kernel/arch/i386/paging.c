@@ -33,47 +33,53 @@ void set_cr3(void *cr3) {
 void *ismapped(void *virtualaddr) {
   unsigned long pdindex = (unsigned long)virtualaddr >> 22;
   unsigned long ptindex = (unsigned long)virtualaddr >> 12 & 0x03FF;
- 
+
   unsigned long *pd = (unsigned long *)0xFFFFF000;
   unsigned long *pt = ((unsigned long *)0xFFC00000) + (0x400 * pdindex);
 
   if (pt[ptindex] & 0x01)
     return 1;
-  
+
   return 0;
 }
 
 void *get_physaddr(void *virtualaddr) {
   unsigned long pdindex = (unsigned long)virtualaddr >> 22;
   unsigned long ptindex = (unsigned long)virtualaddr >> 12 & 0x03FF;
- 
+
   // Here you need to check whether the PD entry is present.
   unsigned long *pd = (unsigned long *)0xFFFFF000;
   unsigned long *pt = ((unsigned long *)0xFFC00000) + (0x400 * pdindex);
- 
-  // Here you need to check whether the PT entry is present. 
+
+  // Here you need to check whether the PT entry is present.
   return (void *)((pt[ptindex] & ~0xFFF) + ((unsigned long)virtualaddr & 0xFFF));
 }
 
 void map_page(void *physaddr, void *virtualaddr, unsigned int flags) {
     // Make sure that both addresses are page-aligned.
- 
+
     unsigned long pdindex = (unsigned long)virtualaddr >> 22;
     unsigned long ptindex = (unsigned long)virtualaddr >> 12 & 0x03FF;
- 
+
     unsigned long *pd = (unsigned long *)0xFFFFF000;
     // Here you need to check whether the PD entry is present.
     // When it is not present, you need to create a new empty PT and
     // adjust the PDE accordingly.
- 
+
     unsigned long *pt = ((unsigned long *)0xFFC00000) + (0x400 * pdindex);
     // Here you need to check whether the PT entry is present.
     // When it is, then there is already a mapping present. What do you do now?
- 
+
     pt[ptindex] = ((unsigned long)physaddr) | (flags & 0xFFF) | 0x01; // Present
- 
+
     // Now you need to flush the entry in the TLB
     // or you might not notice the change.
+}
+
+void idpaging(uint32_t *first_pte, uint32_t from, int size) {
+  from = from & 0xfffff000; // discard bits we don't want
+  for(; size > 0; from += 4096, size -= 4096, first_pte++)
+    *first_pte = from | 1; // mark page as present
 }
 
 void stack_init(struct Stack *stack) {
@@ -120,8 +126,7 @@ void recursive_paging_init(void) {
   // Get the current physical and virtual page directory address
   uint32_t pd_phys = get_cr3();
   uint32_t *pd_ptr = (uint32_t*)(pd_phys + 0xC0000000);
-  
+
   // Set the page directory self-reference
   pd_ptr[1023] = pd_phys | 0x03;
 }
-
